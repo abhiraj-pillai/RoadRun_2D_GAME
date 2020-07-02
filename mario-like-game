@@ -1,0 +1,169 @@
+import pygame
+import random,time ,os
+import sys
+from pygame.locals import *
+FPS = 120
+white = (255, 255, 255) 
+green = (0, 255, 0) 
+blue = (0, 0, 128)
+black = (0,0,0)
+SCREENWIDTH = 289
+SCREENHEIGTH = 511
+SCREEN = pygame.display.set_mode((SCREENWIDTH,SCREENHEIGTH))
+IMAGES = {}
+SOUNDS = {}
+def check_collision(obs,char):
+    for obstacles in obs:
+        if char.colliderect(obstacles):
+            return True
+    if char.top<= -150 :
+        return True
+
+def create_obs():
+    obstacles = [IMAGES["car"],IMAGES["box"]]
+    selected = random.choice(obstacles)
+    if selected == IMAGES["box"]:
+        obstacle_rect = selected.get_rect(center=(random.choice([300,350,400]),380)).inflate(-30,-30)
+    else:
+        obstacle_rect = selected.get_rect(center=(random.choice([300,350,400]),380)).inflate(-10,-10)
+    return obstacle_rect,selected
+
+def move_obs(obs):
+    for obstacle in obs:
+        obstacle.centerx -=4
+    return obs
+def draw_obs(obs1,obs2):
+    for i in range(len(obs1)):
+        SCREEN.blit(obs2[i],obs1[i])
+def welcomeScreen():
+    # pygame.mixer.__init__()
+    pygame.mixer.music.load('C:\\Python 3.7.1\\Projects\\pygame Simple Game\\sounds\\bg.mp3')
+    pygame.mixer.music.play(loops = 3 , start = 0.24)
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
+                pygame.quit()
+                sys.exit()
+            elif event.type == KEYDOWN and event.key == K_UP:
+                pygame.mixer.music.stop()
+                mainGame()
+                
+            
+        font = pygame.font.Font("C:\\Python 3.7.1\\Projects\\pygame Simple Game\\font1.ttf", 19) 
+        text = font.render('Press UP Arrow to START', True, black) 
+        SCREEN.blit(IMAGES["bg"],(0,0))
+        SCREEN.blit(text,(32,200))
+        SCREEN.blit(IMAGES["welcome"],(45,150))
+        SCREEN.blit(IMAGES["person"],(100,260))
+        pygame.display.update()
+        FPSCLOCK.tick(FPS)
+
+def mainGame():
+
+    pygame.mixer.music.load('C:\\Python 3.7.1\\Projects\\pygame Simple Game\\sounds\\bg.mp3')
+    pygame.mixer.music.play(loops = 3 , start = 0.24)
+    pygame.display.set_mode((SCREENWIDTH,SCREENHEIGTH))
+    SCREEN.blit(IMAGES["bg"],(0,0))
+    char_rect = IMAGES["person"].get_rect(center=(50,320)).inflate(-40,-40)
+    gravity = 0.25
+    movement = 0
+    obs_list=[]
+    obs_surface_list=[]
+    game_active= True
+    SPAWNPIPE = pygame.USEREVENT
+    pygame.time.set_timer(SPAWNPIPE,1700)
+    score = 0
+    playonce = True
+
+    while True:
+        for event in pygame.event.get():
+            
+            if event.type == pygame.QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
+                pygame.quit()
+                sys.exit()
+            if event.type == KEYDOWN :
+                if event.key == pygame.K_UP and game_active:
+                    SOUNDS["jump"].play()
+                    movement = 0
+                    movement-=9
+            if event.type == SPAWNPIPE and game_active:
+                created_obs = create_obs()
+                obs_list.append(created_obs[0])
+                obs_surface_list.append(created_obs[1])
+                print(obs_list)
+        
+        SCREEN.blit(IMAGES["bg"],(0,0))
+
+        game_active = not check_collision(obs_list,char_rect)
+        if game_active:
+        # character  movement
+            char_rect.centery += movement
+            if char_rect.centery<320:
+                movement+=gravity
+                
+            elif char_rect.centery>320:
+                movement=0
+                
+            
+            SCREEN.blit(IMAGES["person"],char_rect)
+            # score 
+            score +=1
+
+            # obstacles
+            obs_list = move_obs(obs_list)
+            draw_obs(obs_list,obs_surface_list)
+            if len(obs_list)>1 and obs_list[0].centerx<-40 :
+                obs_list.pop(0)
+                obs_surface_list.pop(0)
+
+            
+        else:
+            time.sleep(1)
+            pygame.mixer.music.stop()
+            if playonce:
+                SOUNDS["die"].play()
+                playonce = False
+            
+            font1 = pygame.font.Font("C:\\Python 3.7.1\\Projects\\pygame Simple Game\\font1.ttf", 32) 
+            font2 = pygame.font.Font("C:\\Python 3.7.1\\Projects\\pygame Simple Game\\font2.ttf", 40)
+            text = font2.render('GAME OVER', True, black) 
+            text2 = font2.render("Your Score is", True , black)
+            text3 = font1.render(f"{score//15}", True , black)
+            SCREEN.blit(text,(90,200))
+            SCREEN.blit(text2,(50,300))
+            SCREEN.blit(text3,(200,285))
+        pygame.display.update()
+        FPSCLOCK.tick(FPS)      
+                
+
+
+if __name__ == "__main__":
+    pygame.init()
+    pygame.mixer.pre_init(44100, 16, 2, 4096)
+  
+    FPSCLOCK = pygame.time.Clock()
+    pygame.display.set_caption("A Game by Pillai")
+    
+
+    IMAGES = {
+
+    "char": pygame.image.load("C:\\Python 3.7.1\\Projects\\pygame Simple Game\\char.png").convert_alpha(),
+    "bg": pygame.image.load("C:\\Python 3.7.1\\Projects\\pygame Simple Game\\bg.jpg").convert_alpha(),
+    "car": pygame.image.load("C:\\Python 3.7.1\\Projects\\pygame Simple Game\\car.png").convert_alpha(),
+    "person": pygame.image.load("C:\\Python 3.7.1\\Projects\\pygame Simple Game\\person_rs.png").convert_alpha(),
+    "welcome":pygame.image.load("C:\\Python 3.7.1\\Projects\\pygame Simple Game\\welcome.png").convert_alpha(),
+    "box":pygame.image.load("C:\\Python 3.7.1\\Projects\\pygame Simple Game\\box.png").convert_alpha()
+    
+    }
+
+
+    SOUNDS = {
+        
+        "die":pygame.mixer.Sound("C:\\Python 3.7.1\\Projects\\pygame Simple Game\\sounds\\game over.wav"),
+        "jump":pygame.mixer.Sound("pygame Simple Game/sounds/jump_2.wav")
+
+    }
+
+    while True:
+        welcomeScreen()
+        mainGame()
